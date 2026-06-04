@@ -1,11 +1,17 @@
-import {
-  consumeStream,
-  convertToModelMessages,
-  streamText,
-  UIMessage,
-} from 'ai'
+import { consumeStream, convertToModelMessages, streamText, UIMessage, LanguageModel } from "ai";
+import { createOpenAI } from "@ai-sdk/openai";
 
-export const maxDuration = 60
+export const maxDuration = 60;
+
+// Criar cliente OpenRouter usando compatibilidade com OpenAI API
+const openrouter = createOpenAI({
+  apiKey: process.env.OPENROUTER_API_KEY,
+  baseURL: "https://openrouter.ai/api/v1",
+  defaultHeaders: {
+    "HTTP-Referer": "http://localhost:3000",
+    "X-Title": "Crônicas do Destino",
+  },
+});
 
 const SYSTEM_PROMPT = `Você é um mestre narrador de histórias interativas. Seu papel é criar narrativas envolventes e imersivas baseadas nas escolhas do jogador.
 
@@ -35,29 +41,29 @@ GÊNEROS DISPONÍVEIS:
 - Investigação: mistérios, crimes, detetives
 - Romance: relacionamentos, drama emocional, aventuras pessoais
 
-Adapte seu estilo narrativo ao gênero escolhido pelo jogador.`
+Adapte seu estilo narrativo ao gênero escolhido pelo jogador.`;
 
 export async function POST(req: Request) {
-  const { messages, genre }: { messages: UIMessage[]; genre?: string } = await req.json()
+  const { messages, genre }: { messages: UIMessage[]; genre?: string } = await req.json();
 
-  const systemMessage = genre 
+  const systemMessage = genre
     ? `${SYSTEM_PROMPT}\n\nGÊNERO ATUAL: ${genre}. Adapte toda a narrativa para este gênero específico.`
-    : SYSTEM_PROMPT
+    : SYSTEM_PROMPT;
 
   const result = streamText({
-    model: 'anthropic/claude-sonnet-4-20250514',
+    model: openrouter("openai/gpt-4o-mini"),
     system: systemMessage,
     messages: await convertToModelMessages(messages),
     abortSignal: req.signal,
     temperature: 0.8,
-    maxOutputTokens: 1500,
-  })
+    maxTokens: 1500,
+  });
 
   return result.toUIMessageStreamResponse({
     originalMessages: messages,
     onFinish: async ({ isAborted }) => {
-      if (isAborted) return
+      if (isAborted) return;
     },
     consumeSseStream: consumeStream,
-  })
+  });
 }
