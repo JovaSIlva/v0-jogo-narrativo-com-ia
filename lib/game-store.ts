@@ -1,6 +1,6 @@
 import { UIMessage } from "ai";
 
-export type Genre = "fantasia" | "terror" | "ficcao-cientifica" | "investigacao" | "romance";
+export type Genre = "fantasia" | "terror" | "ficcao-cientifica" | "investigacao" | "romance" | "infantil-aventura" | "contos-fadas" | "animais-falantes";
 
 export interface GameState {
   genre: Genre | null;
@@ -48,6 +48,24 @@ export const GENRE_INFO: Record<Genre, { name: string; description: string; icon
     description: "Viva histórias de amor, paixão e conexões profundas",
     icon: "💝",
     color: "from-pink-500/20 to-pink-900/20",
+  },
+  "infantil-aventura": {
+    name: "Aventura Infantil",
+    description: "Aventuras lúdicas e divertidas sobre amizade, exploração e descobertas fantásticas",
+    icon: "🎈",
+    color: "from-amber-400/20 to-orange-500/20",
+  },
+  "contos-fadas": {
+    name: "Contos de Fadas",
+    description: "Reinos encantados, criaturas gentis, castelos coloridos e lições valiosas",
+    icon: "👑",
+    color: "from-purple-400/20 to-indigo-500/20",
+  },
+  "animais-falantes": {
+    name: "Animais Falantes",
+    description: "Histórias mágicas em florestas onde os animais conversam e se ajudam",
+    icon: "🦊",
+    color: "from-green-400/20 to-emerald-700/20",
   },
 };
 
@@ -154,6 +172,24 @@ export function getInitialPrompt(genre: Genre, playerName: string): string {
 
       `Comece em uma situação onde ${playerName} está em um conflito emocional: um coração partido, uma decisão difícil de fazer, ou se sentindo perdido. Então, alguém entra em suas vidas. Como isso muda tudo?`,
     ],
+
+    "infantil-aventura": [
+      `Inicie uma história de aventura infantil divertida e leve. O protagonista se chama ${playerName}. Comece com uma descoberta alegre: um mapa de tesouro de brinquedo no quintal, um baú misterioso no sótão com fantasias engraçadas, ou um caminho secreto no jardim decorado com flores brilhantes. Mantenha o tom alegre, seguro e focado em amizade.`,
+      `Crie uma aventura infantil onde ${playerName} encontra um portal mágico embaixo da cama que leva à Terra dos Doces e Nuvens Flutuantes. Como ${playerName} começa a explorar este lugar divertido?`,
+      `O jovem aventureiro ${playerName} descobre um objeto brilhante no quintal: uma chave em formato de estrela que faz barulho de sininhos. Que porta mágica e divertida essa chave vai abrir?`
+    ],
+
+    "contos-fadas": [
+      `Inicie um clássico conto de fadas infantil. O protagonista se chama ${playerName}. Comece a narrativa com a clássica introdução: Era uma vez, em um lindo reino distante, o jovem ${playerName}... Estabeleça o cenário lúdico (um castelo colorido, uma floresta reluzente) e introduza um mistério leve, como uma estrela brilhante que caiu no jardim do castelo e precisa de ajuda para voltar ao céu.`,
+      `Crie um conto de fadas onde ${playerName} é convidado para a festa de aniversário do dragãozinho azul que mora na Montanha de Marshmallow. Como começa essa subida divertida e cheia de novos amigos?`,
+      `No Reino dos Espelhos Mágicos, ${playerName} percebe que a lua está com sono e adormeceu antes da hora, deixando o reino escuro. Inicie a jornada lúdica de ${playerName} para cantar uma canção de ninar para a lua deitar confortavelmente.`
+    ],
+
+    "animais-falantes": [
+      `Inicie uma história encantadora de animais falantes. O protagonista se chama ${playerName}. Comece no Bosque das Castanhas, onde ${playerName} encontra um esquilo simpático de cachecol vermelho que perdeu suas nozes mágicas e pede ajuda. Mantenha o tom fofo, amigável e acolhedor.`,
+      `Caminhando pela floresta florida, ${playerName} ouve um sussurro. Um coelhinho com uma mochila azul está perdido e precisa de ajuda para ler seu mapa. Que linda amizade e aventura começam aqui?`,
+      `Na árvore mais alta da Floresta Verdejante, ${playerName} conhece uma corujinha tocadora de violino e um guaxinim pintor. Comece uma história fofa de ajuda mútua e diversão com esses bichinhos.`
+    ]
   };
 
   // Seleciona aleatoriamente um prompt do array do gênero

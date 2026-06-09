@@ -17,6 +17,9 @@ const GENRE_STYLE_SUFFIX: Record<Genre, string> = {
   "ficcao-cientifica": ", cyberpunk sci-fi concept art, high-tech, neon glow, holographic, detailed environment, futuristic, cinematic lighting, synthwave",
   investigacao: ", classic film noir, dark moody atmosphere, rainy streets, cinematic shadows, high contrast digital art, dramatic lighting, detective",
   romance: ", warm romantic painting, soft focus, sun flare, emotional, dreamlike digital art, beautiful lighting, peaceful",
+  "infantil-aventura": ", cute cartoon illustration, vibrant colors, child friendly, pixar style, 3d render, detailed, cheerful, bright lighting",
+  "contos-fadas": ", whimsical fairytale illustration, cute magical setting, castle, friendly dragon, magic glow, storytelling book art, disney concept style",
+  "animais-falantes": ", cute anthropomorphic forest animals illustration, children story book style, cozy cottage, watercolor feel, warm lighting, adorable",
 }
 
 function getSeedFromString(str: string): number {
