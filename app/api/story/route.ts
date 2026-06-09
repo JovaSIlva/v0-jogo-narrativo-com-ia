@@ -58,10 +58,10 @@ function cleanAssistantMessage(content: string): string {
   const choicesSeparator = "---ESCOLHAS---";
   const imageSeparator = "---IMAGEM---";
   let narrative = content;
-  
+
   const choicesIndex = content.indexOf(choicesSeparator);
   const imageIndex = content.indexOf(imageSeparator);
-  
+
   if (choicesIndex !== -1) {
     narrative = content.substring(0, choicesIndex).trim();
   } else if (imageIndex !== -1) {
@@ -75,11 +75,11 @@ export async function POST(req: Request) {
     await req.json();
 
   // Limpar as mensagens antigas do assistente para manter apenas a narrativa no histórico
-  const cleanedMessages = messages.map(msg => {
-    if (msg.role === 'assistant') {
+  const cleanedMessages = messages.map((msg) => {
+    if (msg.role === "assistant") {
       // Limpar parts se existirem
-      const cleanParts = msg.parts?.map(part => {
-        if (part.type === 'text') {
+      const cleanParts = msg.parts?.map((part) => {
+        if (part.type === "text") {
           return { ...part, text: cleanAssistantMessage(part.text) };
         }
         return part;
@@ -87,13 +87,16 @@ export async function POST(req: Request) {
 
       return {
         ...msg,
-        parts: cleanParts || []
+        parts: cleanParts || [],
       };
     }
     return msg;
   });
 
-  const isChildGenre = genre === "infantil-aventura" || genre === "contos-fadas" || genre === "animais-falantes";
+  const isChildGenre =
+    genre === "infantil-aventura" ||
+    genre === "contos-fadas" ||
+    genre === "animais-falantes";
 
   const systemMessage = genre
     ? `${SYSTEM_PROMPT}\n\nGÊNERO ATUAL: ${genre}. Adapte toda a narrativa para este gênero específico.${
