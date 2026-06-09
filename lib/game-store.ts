@@ -10,6 +10,14 @@ export interface GameState {
   isStarted: boolean;
 }
 
+export interface SavedGameData {
+  id: string;
+  genre: Genre;
+  playerName: string;
+  messages: UIMessage[];
+  updatedAt: number;
+}
+
 export const GENRE_INFO: Record<Genre, { name: string; description: string; icon: string; color: string }> = {
   fantasia: {
     name: "Fantasia",
