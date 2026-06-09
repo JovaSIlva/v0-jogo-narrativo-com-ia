@@ -51,24 +51,55 @@ export const GENRE_INFO: Record<Genre, { name: string; description: string; icon
   },
 };
 
-export function parseChoices(text: string): { narrative: string; choices: string[] } {
-  const separator = "---ESCOLHAS---";
-  const parts = text.split(separator);
+export interface ParsedStory {
+  narrative: string;
+  choices: string[];
+  imagePrompt?: string;
+}
 
-  if (parts.length < 2) {
-    return { narrative: text, choices: [] };
+export function parseChoices(text: string): ParsedStory {
+  const choicesSeparator = "---ESCOLHAS---";
+  const imageSeparator = "---IMAGEM---";
+
+  let narrative = text;
+  let choices: string[] = [];
+  let imagePrompt: string | undefined = undefined;
+
+  const choicesIndex = text.indexOf(choicesSeparator);
+  const imageIndex = text.indexOf(imageSeparator);
+
+  if (choicesIndex !== -1) {
+    narrative = text.substring(0, choicesIndex).trim();
+
+    if (imageIndex > choicesIndex) {
+      const choicesPart = text.substring(choicesIndex + choicesSeparator.length, imageIndex).trim();
+      const imagePart = text.substring(imageIndex + imageSeparator.length).trim();
+
+      choices = parseChoicesList(choicesPart);
+      imagePrompt = imagePart || undefined;
+    } else {
+      const choicesPart = text.substring(choicesIndex + choicesSeparator.length).trim();
+      choices = parseChoicesList(choicesPart);
+    }
+  } else if (imageIndex !== -1) {
+    narrative = text.substring(0, imageIndex).trim();
+    imagePrompt = text.substring(imageIndex + imageSeparator.length).trim() || undefined;
   }
 
-  const narrative = parts[0].trim();
-  const choicesText = parts[1].trim();
+  // Se o prompt de imagem contiver instruções residuais de placeholders do modelo, remova-as
+  if (imagePrompt) {
+    imagePrompt = imagePrompt.replace(/[\[\]]/g, "").trim();
+  }
 
-  const choices = choicesText
+  return { narrative, choices, imagePrompt };
+}
+
+function parseChoicesList(choicesText: string): string[] {
+  return choicesText
     .split("\n")
     .map((line) => line.trim())
     .filter((line) => /^\d+\./.test(line))
     .map((line) => line.replace(/^\d+\.\s*/, ""));
-
-  return { narrative, choices };
 }
 
 export function getInitialPrompt(genre: Genre, playerName: string): string {

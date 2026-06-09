@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Genre, GENRE_INFO, parseChoices } from '@/lib/game-store'
 import { StoryDisplay } from './story-display'
 import { ChoiceButtons } from './choice-buttons'
+import { SceneImage } from './scene-image'
 import { UIMessage } from 'ai'
 
 interface GameInterfaceProps {
@@ -37,7 +38,7 @@ export function GameInterface({
     .map(p => p.text)
     .join('') || ''
   
-  const { narrative, choices } = parseChoices(messageText)
+  const { narrative, choices, imagePrompt } = parseChoices(messageText)
   
   // Get history of past scenes (excluding the latest)
   const pastScenes = messages
@@ -129,6 +130,14 @@ export function GameInterface({
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.5 }}
               >
+                {imagePrompt && (
+                  <SceneImage
+                    imagePrompt={imagePrompt}
+                    genre={genre}
+                    messageId={latestAssistantMessage?.id || messages.length.toString()}
+                  />
+                )}
+
                 <StoryDisplay 
                   narrative={narrative} 
                   isStreaming={isStreaming && choices.length === 0} 

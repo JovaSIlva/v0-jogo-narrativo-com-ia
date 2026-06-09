@@ -1,4 +1,10 @@
-import { consumeStream, convertToModelMessages, streamText, UIMessage, LanguageModel } from "ai";
+import {
+  consumeStream,
+  convertToModelMessages,
+  streamText,
+  UIMessage,
+  LanguageModel,
+} from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
 
 export const maxDuration = 60;
@@ -7,7 +13,7 @@ export const maxDuration = 60;
 const openrouter = createOpenAI({
   apiKey: process.env.OPENROUTER_API_KEY,
   baseURL: "https://openrouter.ai/api/v1",
-  defaultHeaders: {
+  headers: {
     "HTTP-Referer": "http://localhost:3000",
     "X-Title": "Crônicas do Destino",
   },
@@ -27,12 +33,15 @@ REGRAS IMPORTANTES:
 
 FORMATO DE RESPOSTA:
 Escreva a narrativa em prosa, descrevendo a cena de forma vívida.
-Após a narrativa, apresente as escolhas no seguinte formato:
+Após a narrativa, apresente as escolhas e uma breve descrição visual para geração de imagem, exatamente no seguinte formato:
 
 ---ESCOLHAS---
 1. [Descrição da primeira escolha]
 2. [Descrição da segunda escolha]
 3. [Descrição da terceira escolha]
+
+---IMAGEM---
+[Uma descrição visual curta de 10 a 15 palavras da cena atual EM INGLÊS. Foque no cenário, personagens e atmosfera. Não use termos abstratos, descreva apenas o que é visível.]
 
 GÊNEROS DISPONÍVEIS:
 - Fantasia: magia, criaturas místicas, reinos encantados
@@ -44,7 +53,8 @@ GÊNEROS DISPONÍVEIS:
 Adapte seu estilo narrativo ao gênero escolhido pelo jogador.`;
 
 export async function POST(req: Request) {
-  const { messages, genre }: { messages: UIMessage[]; genre?: string } = await req.json();
+  const { messages, genre }: { messages: UIMessage[]; genre?: string } =
+    await req.json();
 
   const systemMessage = genre
     ? `${SYSTEM_PROMPT}\n\nGÊNERO ATUAL: ${genre}. Adapte toda a narrativa para este gênero específico.`
@@ -56,7 +66,7 @@ export async function POST(req: Request) {
     messages: await convertToModelMessages(messages),
     abortSignal: req.signal,
     temperature: 0.8,
-    maxTokens: 1500,
+    maxOutputTokens: 1500,
   });
 
   return result.toUIMessageStreamResponse({
