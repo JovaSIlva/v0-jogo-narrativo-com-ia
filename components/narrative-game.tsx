@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import { useChat } from '@ai-sdk/react'
 import { DefaultChatTransport } from 'ai'
-import { Genre, getInitialPrompt, SavedGameData } from '@/lib/game-store'
+import { Genre, getInitialPrompt, SavedGameData, parseChoices } from '@/lib/game-store'
 import { GenreSelector } from '@/components/genre-selector'
 import { PlayerSetup } from '@/components/player-setup'
 import { GameInterface } from '@/components/game-interface'
@@ -28,49 +28,75 @@ export default function NarrativeGame() {
     }
   }, [])
 
-  const { messages, sendMessage, status, setMessages } = useChat({
-    transport: new DefaultChatTransport({ 
-      api: '/api/story',
-      prepareSendMessagesRequest: ({ id, messages }) => ({
-        body: {
-          messages,
-          id,
-          genre: selectedGenre,
-        },
-      }),
+  const genreRef = useRef(selectedGenre)
+  useEffect(() => {
+    genreRef.current = selectedGenre
+  }, [selectedGenre])
+
+  const transport = useMemo(() => new DefaultChatTransport({ 
+    api: '/api/story',
+    prepareSendMessagesRequest: ({ id, messages }) => ({
+      body: {
+        messages,
+        id,
+        genre: genreRef.current,
+      },
     }),
+  }), [])
+
+  const { messages, sendMessage, status, setMessages } = useChat({
+    transport
   })
 
   const isStreaming = status === 'streaming' || status === 'submitted'
 
-  useEffect(() => {
-    if (phase === 'playing' && selectedGenre && playerName && messages.length > 0 && currentGameId) {
-      const saved = localStorage.getItem('savedGames')
-      let games: SavedGameData[] = []
-      if (saved) {
-        try {
-          games = JSON.parse(saved)
-        } catch (e) {}
-      }
-      
-      const gameData: SavedGameData = {
-        id: currentGameId,
-        genre: selectedGenre,
-        playerName,
-        messages,
-        updatedAt: Date.now()
-      }
+  // Extrai a descrição visual do protagonista da PRIMEIRA mensagem do assistente
+  // e a mantém como âncora visual para todas as gerações de imagem subsequentes
+  const protagonistDescription = useMemo(() => {
+    const firstAssistant = messages.find(m => m.role === 'assistant')
+    if (!firstAssistant) return undefined
+    const text = firstAssistant.parts
+      ?.filter((p): p is { type: 'text'; text: string } => p.type === 'text')
+      .map(p => p.text)
+      .join('') || ''
+    return parseChoices(text).protagonistDescription
+  }, [messages])
 
-      const existingIndex = games.findIndex(g => g.id === currentGameId)
-      if (existingIndex >= 0) {
-        games[existingIndex] = gameData
-      } else {
-        games.push(gameData)
-      }
-      
-      localStorage.setItem('savedGames', JSON.stringify(games))
-      setSavedGames(games)
+  // Ref para evitar salvar quando não há mudança real nas mensagens
+  const lastSavedMessagesLengthRef = useRef(0)
+
+  // Salvar no localStorage SEM chamar setSavedGames (evita loop infinito)
+  useEffect(() => {
+    if (phase !== 'playing' || !selectedGenre || !playerName || messages.length === 0 || !currentGameId) return
+    // Só salvar quando o número de mensagens muda (não a cada re-render)
+    if (messages.length === lastSavedMessagesLengthRef.current) return
+    lastSavedMessagesLengthRef.current = messages.length
+
+    const saved = localStorage.getItem('savedGames')
+    let games: SavedGameData[] = []
+    if (saved) {
+      try {
+        games = JSON.parse(saved)
+      } catch (e) {}
     }
+    
+    const gameData: SavedGameData = {
+      id: currentGameId,
+      genre: selectedGenre,
+      playerName,
+      messages,
+      updatedAt: Date.now()
+    }
+
+    const existingIndex = games.findIndex(g => g.id === currentGameId)
+    if (existingIndex >= 0) {
+      games[existingIndex] = gameData
+    } else {
+      games.push(gameData)
+    }
+    
+    localStorage.setItem('savedGames', JSON.stringify(games))
+    // NÃO chamar setSavedGames aqui — evita re-render que cria loop
   }, [phase, selectedGenre, playerName, messages, currentGameId])
 
   const handleContinue = useCallback((id: string) => {
@@ -116,6 +142,19 @@ export default function NarrativeGame() {
     setSelectedGenre(null)
   }, [])
 
+  const handleDeleteGame = useCallback((id: string) => {
+    setSavedGames(prev => {
+      const updated = prev.filter(g => g.id !== id)
+      localStorage.setItem('savedGames', JSON.stringify(updated))
+      return updated
+    })
+  }, [])
+
+  const handleDeleteAllGames = useCallback(() => {
+    setSavedGames([])
+    localStorage.removeItem('savedGames')
+  }, [])
+
   return (
     <>
       {phase === 'genre-select' && (
@@ -123,6 +162,8 @@ export default function NarrativeGame() {
           onSelect={handleGenreSelect} 
           onContinue={handleContinue}
           savedGames={savedGames}
+          onDelete={handleDeleteGame}
+          onDeleteAll={handleDeleteAllGames}
         />
       )}
       
@@ -142,6 +183,7 @@ export default function NarrativeGame() {
           isStreaming={isStreaming}
           onChoice={handleChoice}
           onRestart={handleRestart}
+          protagonistDescription={protagonistDescription}
         />
       )}
     </>

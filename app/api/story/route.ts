@@ -8,15 +8,21 @@ import { createOpenAI } from "@ai-sdk/openai";
 
 export const maxDuration = 60;
 
-// Criar cliente OpenRouter usando compatibilidade com OpenAI API
-const openrouter = createOpenAI({
+// Detectar se a chave é do OpenRouter ou da OpenAI
+const isOpenRouter = process.env.OPENROUTER_API_KEY?.startsWith("sk-or-");
+
+const aiProvider = createOpenAI({
   apiKey: process.env.OPENROUTER_API_KEY,
-  baseURL: "https://openrouter.ai/api/v1",
-  headers: {
-    "HTTP-Referer": "http://localhost:3000",
-    "X-Title": "Crônicas do Destino",
-  },
+  baseURL: isOpenRouter ? "https://openrouter.ai/api/v1" : undefined,
+  headers: isOpenRouter
+    ? {
+        "HTTP-Referer": "http://localhost:3000",
+        "X-Title": "Crônicas do Destino",
+      }
+    : undefined,
 });
+
+const modelName = isOpenRouter ? "openai/gpt-4o-mini" : "gpt-4o-mini";
 
 const SYSTEM_PROMPT = `Você é um mestre narrador de histórias interativas. Seu papel é criar narrativas envolventes e imersivas baseadas nas escolhas do jogador.
 
@@ -32,7 +38,7 @@ REGRAS IMPORTANTES:
 
 FORMATO DE RESPOSTA:
 Escreva a narrativa em prosa, descrevendo a cena de forma vívida.
-Após a narrativa, apresente as escolhas e uma breve descrição visual para geração de imagem, exatamente no seguinte formato:
+Após a narrativa, apresente as escolhas e informações visuais para geração de imagem, exatamente no seguinte formato:
 
 ---ESCOLHAS---
 1. [Descrição da primeira escolha]
@@ -40,7 +46,10 @@ Após a narrativa, apresente as escolhas e uma breve descrição visual para ger
 3. [Descrição da terceira escolha]
 
 ---IMAGEM---
-[Uma descrição visual curta de 10 a 15 palavras da cena atual EM INGLÊS. Foque no cenário, personagens e atmosfera. Não use termos abstratos, descreva apenas o que é visível.]
+[Uma descrição visual curta de 10 a 15 palavras da cena atual EM INGLÊS. Foque no cenário e atmosfera. NÃO repita o personagem aqui.]
+
+---PERSONAGEM---
+[Descrição visual de 10 a 15 palavras EM INGLÊS da aparência física do protagonista: gênero, cabelo, roupa, traços marcantes. MANTENHA ESTA DESCRIÇÃO IDÊNTICA em todas as respostas, atualizando SOMENTE se a aparência mudar explicitamente na história (ex: trocou de roupa, virou outra forma). Não use o nome do personagem aqui.]
 
 GÊNEROS DISPONÍVEIS:
 - Fantasia: magia, criaturas místicas, reinos encantados
@@ -74,6 +83,8 @@ export async function POST(req: Request) {
   const { messages, genre }: { messages: UIMessage[]; genre?: string } =
     await req.json();
 
+  console.log("RECEIVED MESSAGES:", JSON.stringify(messages, null, 2));
+
   // Limpar as mensagens antigas do assistente para manter apenas a narrativa no histórico
   const cleanedMessages = messages.map((msg) => {
     if (msg.role === "assistant") {
@@ -93,6 +104,8 @@ export async function POST(req: Request) {
     return msg;
   });
 
+  console.log("CLEANED MESSAGES:", JSON.stringify(cleanedMessages, null, 2));
+
   const isChildGenre =
     genre === "infantil-aventura" ||
     genre === "contos-fadas" ||
@@ -107,7 +120,7 @@ export async function POST(req: Request) {
     : SYSTEM_PROMPT;
 
   const result = streamText({
-    model: openrouter("openai/gpt-4o-mini"),
+    model: aiProvider(modelName),
     system: systemMessage,
     messages: await convertToModelMessages(cleanedMessages),
     abortSignal: req.signal,

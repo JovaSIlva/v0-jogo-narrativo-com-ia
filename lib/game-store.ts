@@ -73,25 +73,42 @@ export interface ParsedStory {
   narrative: string;
   choices: string[];
   imagePrompt?: string;
+  protagonistDescription?: string;
 }
 
 export function parseChoices(text: string): ParsedStory {
   const choicesSeparator = "---ESCOLHAS---";
   const imageSeparator = "---IMAGEM---";
+  const characterSeparator = "---PERSONAGEM---";
 
   let narrative = text;
   let choices: string[] = [];
   let imagePrompt: string | undefined = undefined;
+  let protagonistDescription: string | undefined = undefined;
 
   const choicesIndex = text.indexOf(choicesSeparator);
   const imageIndex = text.indexOf(imageSeparator);
+  const characterIndex = text.indexOf(characterSeparator);
+
+  // Extrair descrição do protagonista
+  if (characterIndex !== -1) {
+    protagonistDescription = text.substring(characterIndex + characterSeparator.length).trim();
+    if (protagonistDescription) {
+      protagonistDescription = protagonistDescription.replace(/[\[\]]/g, "").trim();
+      if (!protagonistDescription) protagonistDescription = undefined;
+    }
+  }
 
   if (choicesIndex !== -1) {
     narrative = text.substring(0, choicesIndex).trim();
 
     if (imageIndex > choicesIndex) {
       const choicesPart = text.substring(choicesIndex + choicesSeparator.length, imageIndex).trim();
-      const imagePart = text.substring(imageIndex + imageSeparator.length).trim();
+      // Imagem vai até ---PERSONAGEM--- ou fim do texto
+      const imageEnd = characterIndex > imageIndex ? characterIndex : undefined;
+      const imagePart = imageEnd
+        ? text.substring(imageIndex + imageSeparator.length, imageEnd).trim()
+        : text.substring(imageIndex + imageSeparator.length).trim();
 
       choices = parseChoicesList(choicesPart);
       imagePrompt = imagePart || undefined;
@@ -101,15 +118,18 @@ export function parseChoices(text: string): ParsedStory {
     }
   } else if (imageIndex !== -1) {
     narrative = text.substring(0, imageIndex).trim();
-    imagePrompt = text.substring(imageIndex + imageSeparator.length).trim() || undefined;
+    const imageEnd = characterIndex > imageIndex ? characterIndex : undefined;
+    imagePrompt = imageEnd
+      ? text.substring(imageIndex + imageSeparator.length, imageEnd).trim() || undefined
+      : text.substring(imageIndex + imageSeparator.length).trim() || undefined;
   }
 
-  // Se o prompt de imagem contiver instruções residuais de placeholders do modelo, remova-as
+  // Limpar placeholders residuais
   if (imagePrompt) {
-    imagePrompt = imagePrompt.replace(/[\[\]]/g, "").trim();
+    imagePrompt = imagePrompt.replace(/[\[\]]/g, "").trim() || undefined;
   }
 
-  return { narrative, choices, imagePrompt };
+  return { narrative, choices, imagePrompt, protagonistDescription };
 }
 
 function parseChoicesList(choicesText: string): string[] {

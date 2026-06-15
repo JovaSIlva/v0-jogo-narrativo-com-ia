@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Genre, GENRE_INFO } from '@/lib/game-store'
 import { Sparkles, Image as ImageIcon, RefreshCw } from 'lucide-react'
@@ -9,10 +9,11 @@ interface SceneImageProps {
   imagePrompt: string
   genre: Genre
   messageId: string
+  protagonistDescription?: string
 }
 
 const GENRE_STYLE_SUFFIX: Record<Genre, string> = {
-  fantasia: ", high fantasy art, ethereal, digital painting, glowing light, cinematic lighting, magical atmosphere, artstation, detailed",
+  fantasia: ", high fantasy art, ethereal, digital painting, glowing light, cinematic lighting, magical atmosphere, artstation, highly detailed",
   terror: ", dark gothic horror, eerie, shadow play, foggy, mysterious, digital painting, atmospheric, highly detailed, spooky, cinematic",
   "ficcao-cientifica": ", cyberpunk sci-fi concept art, high-tech, neon glow, holographic, detailed environment, futuristic, cinematic lighting, synthwave",
   investigacao: ", classic film noir, dark moody atmosphere, rainy streets, cinematic shadows, high contrast digital art, dramatic lighting, detective",
@@ -22,44 +23,74 @@ const GENRE_STYLE_SUFFIX: Record<Genre, string> = {
   "animais-falantes": ", cute anthropomorphic forest animals illustration, children story book style, cozy cottage, watercolor feel, warm lighting, adorable",
 }
 
-function getSeedFromString(str: string): number {
-  let hash = 0
-  for (let i = 0; i < str.length; i++) {
-    hash = str.charCodeAt(i) + ((hash << 5) - hash)
-  }
-  return Math.abs(hash)
-}
-
-export function SceneImage({ imagePrompt, genre, messageId }: SceneImageProps) {
+export function SceneImage({ imagePrompt, genre, messageId, protagonistDescription }: SceneImageProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [hasError, setHasError] = useState(false)
   const [imageUrl, setImageUrl] = useState('')
   const [retryCount, setRetryCount] = useState(0)
+  const abortControllerRef = useRef<AbortController | null>(null)
 
   const genreInfo = GENRE_INFO[genre]
-  const seed = getSeedFromString(messageId + retryCount.toString())
 
   useEffect(() => {
+    // Cancelar qualquer requisição anterior
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+    
+    const controller = new AbortController()
+    abortControllerRef.current = controller
+
     setIsLoading(true)
     setHasError(false)
+    setImageUrl('')
 
-    // Limpar o prompt e remover quebras de linha/espaços extras
     const cleanPrompt = imagePrompt.trim().replace(/\s+/g, ' ')
     const styleSuffix = GENRE_STYLE_SUFFIX[genre] || ''
     
-    // URL do Pollinations AI
-    const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanPrompt + styleSuffix)}?width=1024&height=576&nologo=true&seed=${seed}`
-    setImageUrl(url)
-  }, [imagePrompt, genre, messageId, seed, retryCount])
+    // Concatena a descrição do protagonista para manter fidelidade visual
+    const characterContext = protagonistDescription 
+      ? `Main character appearance: ${protagonistDescription}. ` 
+      : ''
+      
+    const fullPrompt = characterContext + cleanPrompt + styleSuffix
 
-  const handleLoad = () => {
-    setIsLoading(false)
-  }
+    const fetchImage = async () => {
+      try {
+        const response = await fetch('/api/generate-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: fullPrompt }),
+          signal: controller.signal,
+        })
 
-  const handleError = () => {
-    setIsLoading(false)
-    setHasError(true)
-  }
+        const data = await response.json().catch(() => ({}))
+
+        if (!response.ok) {
+          const errMsg = data?.error || `HTTP error: ${response.status}`
+          throw new Error(errMsg)
+        }
+        
+        if (data.url) {
+          setImageUrl(data.url)
+          setIsLoading(false)
+        } else {
+          throw new Error('No URL in response')
+        }
+      } catch (error: unknown) {
+        if (error instanceof Error && error.name === 'AbortError') return
+        console.error('Image generation failed:', error)
+        setIsLoading(false)
+        setHasError(true)
+      }
+    }
+
+    fetchImage()
+
+    return () => {
+      controller.abort()
+    }
+  }, [imagePrompt, genre, messageId, retryCount])
 
   const handleRetry = () => {
     setRetryCount(prev => prev + 1)
@@ -72,20 +103,19 @@ export function SceneImage({ imagePrompt, genre, messageId }: SceneImageProps) {
 
       {/* Image element */}
       {imageUrl && !hasError && (
-        <img
+        <motion.img
           src={imageUrl}
           alt={imagePrompt}
-          onLoad={handleLoad}
-          onError={handleError}
-          className={`w-full h-full object-cover transition-all duration-1000 ${
-            isLoading ? 'scale-105 blur-lg opacity-0' : 'scale-100 blur-0 opacity-100'
-          }`}
+          initial={{ opacity: 0, scale: 1.05, filter: 'blur(12px)' }}
+          animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+          transition={{ duration: 1, ease: 'easeOut' }}
+          className="w-full h-full object-cover"
         />
       )}
 
       {/* Glass Overlay with details */}
       <AnimatePresence>
-        {!isLoading && !hasError && (
+        {imageUrl && !isLoading && !hasError && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -96,7 +126,7 @@ export function SceneImage({ imagePrompt, genre, messageId }: SceneImageProps) {
             <div className="flex items-center gap-2 text-white/90 max-w-[85%]">
               <Sparkles className="w-4 h-4 text-primary shrink-0 animate-pulse" />
               <p className="text-xs font-medium truncate italic" title={imagePrompt}>
-                "{imagePrompt}"
+                &ldquo;{imagePrompt}&rdquo;
               </p>
             </div>
             <button
@@ -127,6 +157,9 @@ export function SceneImage({ imagePrompt, genre, messageId }: SceneImageProps) {
             </motion.div>
             <p className="text-xs text-muted-foreground animate-pulse font-serif">
               Materializando a visão da cena...
+            </p>
+            <p className="text-xs text-muted-foreground/50 mt-1">
+              (pode levar até 30 segundos)
             </p>
           </motion.div>
         )}
