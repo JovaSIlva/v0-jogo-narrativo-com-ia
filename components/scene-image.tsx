@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Genre, GENRE_INFO } from '@/lib/game-store'
 import { Sparkles, Image as ImageIcon, RefreshCw } from 'lucide-react'
+import { cacheImage, getCachedImage } from '@/lib/image-cache'
 
 interface SceneImageProps {
   imagePrompt: string
@@ -57,6 +58,16 @@ export function SceneImage({ imagePrompt, genre, messageId, protagonistDescripti
 
     const fetchImage = async () => {
       try {
+        // Se for carregamento normal (sem ser retry explícito), tenta ler do Cache Storage primeiro
+        if (retryCount === 0) {
+          const cached = await getCachedImage(messageId)
+          if (cached) {
+            setImageUrl(cached)
+            setIsLoading(false)
+            return
+          }
+        }
+
         const response = await fetch('/api/generate-image', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -74,6 +85,8 @@ export function SceneImage({ imagePrompt, genre, messageId, protagonistDescripti
         if (data.url) {
           setImageUrl(data.url)
           setIsLoading(false)
+          // Salva em background no Cache Storage
+          cacheImage(messageId, data.url)
         } else {
           throw new Error('No URL in response')
         }

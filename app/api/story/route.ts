@@ -85,6 +85,14 @@ export async function POST(req: Request) {
 
   console.log("RECEIVED MESSAGES:", JSON.stringify(messages, null, 2));
 
+  // Verificar se o usuário solicitou o desfecho final
+  const lastUserMessage = messages.length > 0 ? messages[messages.length - 1] : null;
+  const lastUserText = lastUserMessage?.parts
+    ?.filter((p): p is { type: 'text'; text: string } => p.type === 'text')
+    .map(p => p.text)
+    .join('') || '';
+  const isFinalRequest = lastUserMessage?.role === "user" && lastUserText.includes("[FINAL]");
+
   // Limpar as mensagens antigas do assistente para manter apenas a narrativa no histórico
   const cleanedMessages = messages.map((msg) => {
     if (msg.role === "assistant") {
@@ -111,13 +119,17 @@ export async function POST(req: Request) {
     genre === "contos-fadas" ||
     genre === "animais-falantes";
 
-  const systemMessage = genre
+  let systemMessage = genre
     ? `${SYSTEM_PROMPT}\n\nGÊNERO ATUAL: ${genre}. Adapte toda a narrativa para este gênero específico.${
         isChildGenre
           ? "\nATENÇÃO: Como este é um gênero infantil, use obrigatoriamente um tom alegre, leve, lúdico e seguro, com vocabulário simples e adequado para crianças de 6 a 10 anos. Evite qualquer tipo de violência, horror, desfechos tristes, situações perigosas extremas ou sustos."
           : ""
       }`
     : SYSTEM_PROMPT;
+
+  if (isFinalRequest) {
+    systemMessage += "\n\nATENÇÃO CRÍTICA: O jogador deseja finalizar a história agora. Escreva um desfecho final rico, conclusivo e satisfatório para a narrativa corrente. NÃO inclua opções de escolha (a seção ---ESCOLHAS--- deve ser omitida). Forneça APENAS a narrativa conclusiva, a seção ---IMAGEM--- da cena atual conclusiva e a seção ---PERSONAGEM--- correspondente.";
+  }
 
   const result = streamText({
     model: aiProvider(modelName),
