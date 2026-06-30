@@ -166,6 +166,15 @@ export default function NarrativeGame({ user }: NarrativeGameProps) {
     localStorage.removeItem('savedGames')
   }, [])
 
+  const handleRollback = useCallback(() => {
+    setMessages(prev => {
+      const updated = prev.slice(0, -2)
+      // Forçar o salvamento no localStorage ao resetar a ref de controle
+      lastSavedMessagesLengthRef.current = 0
+      return updated
+    })
+  }, [setMessages])
+
   const handleHomeClick = useCallback(() => {
     if (phase === 'playing') {
       if (confirm('Deseja voltar ao menu principal? Seu progresso atual está salvo.')) {
@@ -218,6 +227,7 @@ export default function NarrativeGame({ user }: NarrativeGameProps) {
             isStreaming={isStreaming}
             onChoice={handleChoice}
             onRestart={handleRestart}
+            onRollback={handleRollback}
             protagonistDescription={protagonistDescription}
           />
         )}

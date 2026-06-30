@@ -17,6 +17,7 @@ interface GameInterfaceProps {
   isStreaming: boolean
   onChoice: (choice: string) => void
   onRestart: () => void
+  onRollback?: () => void
   protagonistDescription?: string
 }
 
@@ -27,6 +28,7 @@ export function GameInterface({
   isStreaming, 
   onChoice,
   onRestart,
+  onRollback,
   protagonistDescription
 }: GameInterfaceProps) {
   const genreInfo = GENRE_INFO[genre]
@@ -83,16 +85,32 @@ export function GameInterface({
             </div>
           </div>
           
-          <button
-            onClick={onRestart}
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-              <polyline points="9 22 9 12 15 12 15 22"/>
-            </svg>
-            Menu Inicial
-          </button>
+          <div className="flex items-center gap-3">
+            {onRollback && messages.filter(m => m.role === 'assistant').length > 1 && !isStreaming && (
+              <button
+                onClick={onRollback}
+                className="text-xs px-3 py-1.5 rounded-lg border border-border/80 text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all flex items-center gap-1.5 cursor-pointer"
+                title="Desfazer última escolha e voltar um capítulo"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 7v6h6"/>
+                  <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>
+                </svg>
+                Voltar Capítulo
+              </button>
+            )}
+
+            <button
+              onClick={onRestart}
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                <polyline points="9 22 9 12 15 12 15 22"/>
+              </svg>
+              Menu Inicial
+            </button>
+          </div>
         </div>
       </header>
 
