@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { gameAudio } from '@/lib/audio-engine'
+import { ttsEngine } from '@/lib/tts-engine'
 
 interface HeaderProps {
   user: {
@@ -20,10 +21,12 @@ export function Header({ user, onHomeClick }: HeaderProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [loggingOut, setLoggingOut] = useState(false)
   const [muted, setMuted] = useState(true)
+  const [narrationEnabled, setNarrationEnabled] = useState(false)
 
   useEffect(() => {
     // Sincronizar estado inicial
     setMuted(gameAudio.getIsMuted())
+    setNarrationEnabled(ttsEngine.getIsEnabled())
   }, [])
 
   const toggleMute = () => {
@@ -32,6 +35,18 @@ export function Header({ user, onHomeClick }: HeaderProps) {
     gameAudio.setMute(nextMuted)
     if (!nextMuted) {
       gameAudio.playSFX('click')
+    }
+  }
+
+  const toggleNarration = () => {
+    const nextEnabled = !narrationEnabled
+    setNarrationEnabled(nextEnabled)
+    ttsEngine.setEnabled(nextEnabled)
+    if (nextEnabled) {
+      gameAudio.playSFX('click')
+      ttsEngine.speak("Narrador ativado.")
+    } else {
+      ttsEngine.stop()
     }
   }
 
@@ -111,6 +126,31 @@ export function Header({ user, onHomeClick }: HeaderProps) {
 
       {/* Navigation Actions */}
       <div className="flex items-center gap-3">
+        {/* Narration Toggle Button */}
+        <button
+          onClick={toggleNarration}
+          className="flex h-7.5 w-7.5 items-center justify-center rounded-lg border border-border/80 hover:bg-muted/30 transition-all text-muted-foreground hover:text-foreground cursor-pointer"
+          title={narrationEnabled ? 'Desativar narrador por voz' : 'Ativar narrador por voz'}
+        >
+          {narrationEnabled ? (
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-emerald-500 animate-pulse">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+              <path d="M19 10v1a7 7 0 0 1-14 0v-1"/>
+              <line x1="12" y1="19" x2="12" y2="23"/>
+              <line x1="8" y1="23" x2="16" y2="23"/>
+            </svg>
+          ) : (
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <line x1="1" y1="1" x2="23" y2="23"/>
+              <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/>
+              <path d="M19 10v1a6.93 6.93 0 0 1-.46 2.5"/>
+              <path d="M5 10v1a6.93 6.93 0 0 0 .5 2.5"/>
+              <line x1="12" y1="19" x2="12" y2="23"/>
+              <line x1="8" y1="23" x2="16" y2="23"/>
+            </svg>
+          )}
+        </button>
+
         {/* Sound Toggle Button */}
         <button
           onClick={toggleMute}

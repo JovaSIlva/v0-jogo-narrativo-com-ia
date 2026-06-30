@@ -10,6 +10,7 @@ import { BookReader } from './book-reader'
 import { PrintLayout } from './print-layout'
 import { UIMessage } from 'ai'
 import { gameAudio } from '@/lib/audio-engine'
+import { ttsEngine } from '@/lib/tts-engine'
 
 interface GameInterfaceProps {
   genre: Genre
@@ -76,12 +77,20 @@ export function GameInterface({
     }
   }, [genre, sound])
 
-  // Desligar áudio ao sair do jogo
+  // Desligar áudio e fala ao sair do jogo
   useEffect(() => {
     return () => {
       gameAudio.setAmbience('')
+      ttsEngine.stop()
     }
   }, [])
+
+  // Iniciar narração por voz ao terminar de receber o capítulo
+  useEffect(() => {
+    if (!isStreaming && narrative) {
+      ttsEngine.speak(narrative)
+    }
+  }, [isStreaming, narrative])
 
   // Tocar efeito sonoro de fim de jogo
   useEffect(() => {
@@ -102,6 +111,7 @@ export function GameInterface({
 
   const handleChoiceSelect = (choice: string) => {
     gameAudio.playSFX('click')
+    ttsEngine.stop()
     onChoice(choice)
   }
 
@@ -128,6 +138,7 @@ export function GameInterface({
               <button
                 onClick={() => {
                   gameAudio.playSFX('page')
+                  ttsEngine.stop()
                   onRollback()
                 }}
                 className="text-xs px-3 py-1.5 rounded-lg border border-border/80 text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all flex items-center gap-1.5 cursor-pointer"
@@ -144,6 +155,7 @@ export function GameInterface({
             <button
               onClick={() => {
                 gameAudio.playSFX('click')
+                ttsEngine.stop()
                 onRestart()
               }}
               className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2"
@@ -274,6 +286,7 @@ export function GameInterface({
                       <button
                         onClick={() => {
                           gameAudio.playSFX('click')
+                          ttsEngine.stop()
                           onRestart()
                         }}
                         className="w-full sm:w-auto px-6 py-3.5 bg-secondary hover:bg-secondary/85 text-secondary-foreground font-semibold rounded-xl flex items-center justify-center gap-2 hover:scale-105 transition-all cursor-pointer"
