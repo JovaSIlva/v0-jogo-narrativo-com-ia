@@ -1,8 +1,7 @@
-'use client'
-
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Genre, GENRE_INFO, SavedGameData } from '@/lib/game-store'
+import { gameAudio } from '@/lib/audio-engine'
 
 interface GenreSelectorProps {
   onSelect: (genre: Genre) => void
@@ -19,7 +18,10 @@ export function GenreSelector({ onSelect, onContinue, savedGames = [], onDelete,
 
   useEffect(() => {
     // Start opening book after 400ms
-    const timer1 = setTimeout(() => setBookState('opening'), 400)
+    const timer1 = setTimeout(() => {
+      setBookState('opening')
+      gameAudio.playSFX('page')
+    }, 400)
     // Fully opened after 1400ms (matching the flip transition duration)
     const timer2 = setTimeout(() => setBookState('open'), 1400)
     
@@ -28,6 +30,7 @@ export function GenreSelector({ onSelect, onContinue, savedGames = [], onDelete,
       clearTimeout(timer2)
     }
   }, [])
+
 
   const handleDeleteAll = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -191,7 +194,10 @@ export function GenreSelector({ onSelect, onContinue, savedGames = [], onDelete,
                                 </button>
                               )}
                               <button
-                                onClick={() => onContinue(game.id)}
+                                onClick={() => {
+                                  gameAudio.playSFX('click')
+                                  onContinue(game.id)
+                                }}
                                 className={`w-full p-3.5 rounded-xl border border-border/40 bg-gradient-to-br ${info.color} text-left flex flex-col gap-1 transition-all duration-300 hover:border-primary/50 hover:scale-[1.01]`}
                               >
                                 <div className="flex items-center justify-between">
@@ -253,7 +259,10 @@ export function GenreSelector({ onSelect, onContinue, savedGames = [], onDelete,
                 {genres.map(([key, info]) => (
                   <button
                     key={key}
-                    onClick={() => onSelect(key)}
+                    onClick={() => {
+                      gameAudio.playSFX('page')
+                      onSelect(key)
+                    }}
                     className={`w-full group p-4.5 rounded-xl border border-border/40 bg-gradient-to-br ${info.color} text-left flex items-start gap-4 transition-all duration-300 hover:border-primary/50 hover:scale-[1.01] relative overflow-hidden`}
                   >
                     <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -303,7 +312,10 @@ export function GenreSelector({ onSelect, onContinue, savedGames = [], onDelete,
                   {genres.map(([key, info]) => (
                     <button
                       key={key}
-                      onClick={() => onSelect(key)}
+                      onClick={() => {
+                        gameAudio.playSFX('page')
+                        onSelect(key)
+                      }}
                       className={`w-full group p-4 rounded-xl border border-border/40 bg-gradient-to-br ${info.color} text-left flex items-start gap-4 transition-all duration-300`}
                     >
                       <span className="text-3xl p-1.5 bg-background/40 rounded-lg">{info.icon}</span>
@@ -352,7 +364,10 @@ export function GenreSelector({ onSelect, onContinue, savedGames = [], onDelete,
                               </button>
                             )}
                             <button
-                              onClick={() => onContinue(game.id)}
+                              onClick={() => {
+                                gameAudio.playSFX('click')
+                                onContinue(game.id)
+                              }}
                               className={`w-full p-4 rounded-xl border border-border/40 bg-gradient-to-br ${info.color} text-left flex flex-col gap-1`}
                             >
                               <div className="flex items-center justify-between">

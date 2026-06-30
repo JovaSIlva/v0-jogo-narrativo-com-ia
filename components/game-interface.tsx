@@ -9,6 +9,7 @@ import { SceneImage } from './scene-image'
 import { BookReader } from './book-reader'
 import { PrintLayout } from './print-layout'
 import { UIMessage } from 'ai'
+import { gameAudio } from '@/lib/audio-engine'
 
 interface GameInterfaceProps {
   genre: Genre
@@ -45,7 +46,7 @@ export function GameInterface({
     .map(p => p.text)
     .join('') || ''
   
-  const { narrative, choices, imagePrompt } = parseChoices(messageText)
+  const { narrative, choices, imagePrompt, sound } = parseChoices(messageText)
   
   // Get history of past scenes (excluding the latest)
   const pastScenes = messages
@@ -59,6 +60,37 @@ export function GameInterface({
       return parseChoices(text).narrative
     })
 
+  // Controlar atmosfera sonora padrão do gênero e transições da IA
+  useEffect(() => {
+    if (sound) {
+      gameAudio.setAmbience(sound)
+    } else {
+      let defaultAmbience: any = 'fantasia'
+      if (genre === 'terror') defaultAmbience = 'terror'
+      else if (genre === 'ficcao-cientifica') defaultAmbience = 'ficcao-cientifica'
+      else if (genre === 'investigacao') defaultAmbience = 'investigacao'
+      else if (genre === 'romance') defaultAmbience = 'romance'
+      else if (genre === 'infantil-aventura' || genre === 'animais-falantes' || genre === 'contos-fadas') defaultAmbience = 'infantil'
+      
+      gameAudio.setAmbience(defaultAmbience)
+    }
+  }, [genre, sound])
+
+  // Desligar áudio ao sair do jogo
+  useEffect(() => {
+    return () => {
+      gameAudio.setAmbience('')
+    }
+  }, [])
+
+  // Tocar efeito sonoro de fim de jogo
+  useEffect(() => {
+    const isGameOver = !isStreaming && choices.length === 0 && messages.filter(m => m.role === 'assistant').length > 0
+    if (isGameOver) {
+      gameAudio.playSFX('success')
+    }
+  }, [isStreaming, choices.length, messages.length])
+
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTo({
@@ -67,6 +99,12 @@ export function GameInterface({
       })
     }
   }, [messageText])
+
+  const handleChoiceSelect = (choice: string) => {
+    gameAudio.playSFX('click')
+    onChoice(choice)
+  }
+
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -88,7 +126,10 @@ export function GameInterface({
           <div className="flex items-center gap-3">
             {onRollback && messages.filter(m => m.role === 'assistant').length > 1 && !isStreaming && (
               <button
-                onClick={onRollback}
+                onClick={() => {
+                  gameAudio.playSFX('page')
+                  onRollback()
+                }}
                 className="text-xs px-3 py-1.5 rounded-lg border border-border/80 text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all flex items-center gap-1.5 cursor-pointer"
                 title="Desfazer última escolha e voltar um capítulo"
               >
@@ -101,7 +142,10 @@ export function GameInterface({
             )}
 
             <button
-              onClick={onRestart}
+              onClick={() => {
+                gameAudio.playSFX('click')
+                onRestart()
+              }}
               className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -171,7 +215,7 @@ export function GameInterface({
                   <>
                     <ChoiceButtons
                       choices={choices}
-                      onSelect={onChoice}
+                      onSelect={handleChoiceSelect}
                       disabled={isStreaming}
                     />
 
@@ -183,7 +227,7 @@ export function GameInterface({
                         className="mt-8 flex justify-center"
                       >
                         <button
-                          onClick={() => onChoice("Eu decido concluir minha jornada e ver o desfecho da história. [FINAL]")}
+                          onClick={() => handleChoiceSelect("Eu decido concluir minha jornada e ver o desfecho da história. [FINAL]")}
                           className="px-5 py-2.5 rounded-xl border border-dashed border-border/80 hover:border-destructive/50 text-muted-foreground hover:text-destructive bg-card/30 hover:bg-destructive/5 transition-all text-xs font-semibold flex items-center gap-2 cursor-pointer shadow-sm hover:shadow"
                         >
                           <span>📕 Concluir Jornada e Gerar Livro</span>
@@ -192,6 +236,7 @@ export function GameInterface({
                     )}
                   </>
                 )}
+
 
                 {/* Tela de Fim de Jogo */}
                 {!isStreaming && choices.length === 0 && messages.filter(m => m.role === 'assistant').length > 0 && (
@@ -215,16 +260,22 @@ export function GameInterface({
                       </p>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
+                     <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
                       <button
-                        onClick={() => setIsBookOpen(true)}
+                        onClick={() => {
+                          gameAudio.playSFX('page')
+                          setIsBookOpen(true)
+                        }}
                         className="w-full sm:w-auto px-6 py-3.5 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:scale-105 transition-all cursor-pointer"
                       >
                         📖 Visualizar e Salvar Livro (PDF)
                       </button>
                       
                       <button
-                        onClick={onRestart}
+                        onClick={() => {
+                          gameAudio.playSFX('click')
+                          onRestart()
+                        }}
                         className="w-full sm:w-auto px-6 py-3.5 bg-secondary hover:bg-secondary/85 text-secondary-foreground font-semibold rounded-xl flex items-center justify-center gap-2 hover:scale-105 transition-all cursor-pointer"
                       >
                         🔄 Menu Inicial

@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
+import { gameAudio } from '@/lib/audio-engine'
 
 interface HeaderProps {
   user: {
@@ -18,6 +19,21 @@ export function Header({ user, onHomeClick }: HeaderProps) {
   const router = useRouter()
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [loggingOut, setLoggingOut] = useState(false)
+  const [muted, setMuted] = useState(true)
+
+  useEffect(() => {
+    // Sincronizar estado inicial
+    setMuted(gameAudio.getIsMuted())
+  }, [])
+
+  const toggleMute = () => {
+    const nextMuted = !muted
+    setMuted(nextMuted)
+    gameAudio.setMute(nextMuted)
+    if (!nextMuted) {
+      gameAudio.playSFX('click')
+    }
+  }
 
   const handleLogout = async () => {
     setLoggingOut(true)
@@ -95,6 +111,29 @@ export function Header({ user, onHomeClick }: HeaderProps) {
 
       {/* Navigation Actions */}
       <div className="flex items-center gap-3">
+        {/* Sound Toggle Button */}
+        <button
+          onClick={toggleMute}
+          className="flex h-7.5 w-7.5 items-center justify-center rounded-lg border border-border/80 hover:bg-muted/30 transition-all text-muted-foreground hover:text-foreground cursor-pointer"
+          title={muted ? 'Ativar som' : 'Desativar som'}
+        >
+          {muted ? (
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <line x1="1" y1="1" x2="23" y2="23"/>
+              <path d="M9 9v6a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/>
+              <path d="M17 16.95A10.07 10.07 0 0 0 21 12v-1.5"/>
+              <path d="M3 10.5a9.91 9.91 0 0 0 .5 3"/>
+              <path d="M12 12v.01"/>
+            </svg>
+          ) : (
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-primary animate-pulse">
+              <path d="M9 18V5l12-2v13"/>
+              <circle cx="6" cy="18" r="3"/>
+              <circle cx="18" cy="16" r="3"/>
+            </svg>
+          )}
+        </button>
+
         {/* Support Project Button */}
         <Link
           href="/colaborar"

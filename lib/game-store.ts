@@ -74,25 +74,55 @@ export interface ParsedStory {
   choices: string[];
   imagePrompt?: string;
   protagonistDescription?: string;
+  sound?: 'fantasia' | 'terror' | 'ficcao-cientifica' | 'investigacao' | 'romance' | 'infantil' | '';
 }
 
 export function parseChoices(text: string): ParsedStory {
   const choicesSeparator = "---ESCOLHAS---";
   const imageSeparator = "---IMAGEM---";
   const characterSeparator = "---PERSONAGEM---";
+  const soundSeparator = "---SOM---";
 
   let narrative = text;
   let choices: string[] = [];
   let imagePrompt: string | undefined = undefined;
   let protagonistDescription: string | undefined = undefined;
+  let sound: any = undefined;
 
   const choicesIndex = text.indexOf(choicesSeparator);
   const imageIndex = text.indexOf(imageSeparator);
   const characterIndex = text.indexOf(characterSeparator);
+  const soundIndex = text.indexOf(soundSeparator);
+
+  // Extrair tipo de som
+  if (soundIndex !== -1) {
+    const rawSound = text.substring(soundIndex + soundSeparator.length).trim().toLowerCase();
+    // Limpar placeholders
+    const cleanSound = rawSound.replace(/[\[\]]/g, "").split("\n")[0].trim();
+    
+    // Mapeamento das palavras-chave para o AudioEngine
+    if (cleanSound.includes("magico") || cleanSound.includes("fantasia")) {
+      sound = "fantasia";
+    } else if (cleanSound.includes("tenso") || cleanSound.includes("combate") || cleanSound.includes("terror")) {
+      sound = "terror";
+    } else if (cleanSound.includes("futurista") || cleanSound.includes("ficcao")) {
+      sound = "ficcao-cientifica";
+    } else if (cleanSound.includes("misterioso") || cleanSound.includes("investigacao")) {
+      sound = "investigacao";
+    } else if (cleanSound.includes("suave") || cleanSound.includes("romance")) {
+      sound = "romance";
+    } else if (cleanSound.includes("alegre") || cleanSound.includes("infantil") || cleanSound.includes("animais")) {
+      sound = "infantil";
+    }
+  }
 
   // Extrair descrição do protagonista
   if (characterIndex !== -1) {
-    protagonistDescription = text.substring(characterIndex + characterSeparator.length).trim();
+    const charEnd = soundIndex > characterIndex ? soundIndex : undefined;
+    protagonistDescription = charEnd 
+      ? text.substring(characterIndex + characterSeparator.length, charEnd).trim()
+      : text.substring(characterIndex + characterSeparator.length).trim();
+      
     if (protagonistDescription) {
       protagonistDescription = protagonistDescription.replace(/[\[\]]/g, "").trim();
       if (!protagonistDescription) protagonistDescription = undefined;
@@ -104,8 +134,11 @@ export function parseChoices(text: string): ParsedStory {
 
     if (imageIndex > choicesIndex) {
       const choicesPart = text.substring(choicesIndex + choicesSeparator.length, imageIndex).trim();
-      // Imagem vai até ---PERSONAGEM--- ou fim do texto
-      const imageEnd = characterIndex > imageIndex ? characterIndex : undefined;
+      // Imagem vai até ---PERSONAGEM--- ou ---SOM--- ou fim do texto
+      const imageEnd = characterIndex > imageIndex 
+        ? characterIndex 
+        : (soundIndex > imageIndex ? soundIndex : undefined);
+        
       const imagePart = imageEnd
         ? text.substring(imageIndex + imageSeparator.length, imageEnd).trim()
         : text.substring(imageIndex + imageSeparator.length).trim();
@@ -118,7 +151,10 @@ export function parseChoices(text: string): ParsedStory {
     }
   } else if (imageIndex !== -1) {
     narrative = text.substring(0, imageIndex).trim();
-    const imageEnd = characterIndex > imageIndex ? characterIndex : undefined;
+    const imageEnd = characterIndex > imageIndex 
+      ? characterIndex 
+      : (soundIndex > imageIndex ? soundIndex : undefined);
+      
     imagePrompt = imageEnd
       ? text.substring(imageIndex + imageSeparator.length, imageEnd).trim() || undefined
       : text.substring(imageIndex + imageSeparator.length).trim() || undefined;
@@ -129,8 +165,9 @@ export function parseChoices(text: string): ParsedStory {
     imagePrompt = imagePrompt.replace(/[\[\]]/g, "").trim() || undefined;
   }
 
-  return { narrative, choices, imagePrompt, protagonistDescription };
+  return { narrative, choices, imagePrompt, protagonistDescription, sound };
 }
+
 
 function parseChoicesList(choicesText: string): string[] {
   return choicesText

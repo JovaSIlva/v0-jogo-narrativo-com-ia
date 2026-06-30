@@ -89,6 +89,16 @@ Escreva a narrativa em prosa. Após o texto, apresente exatamente as estruturas 
 ---PERSONAGEM---
 [Descrição visual de 10 a 15 palavras EM INGLÊS da aparência física do protagonista: gênero, cabelo, roupa, traços. MANTENHA IDÊNTICA, atualize APENAS se a trama alterar isso fisicamente. Não use nomes.]
 
+---SOM---
+[Escolha exatamente UMA das palavras-chave a seguir que melhor combine com a atmosfera atual da cena:
+- magico: momentos de revelação mágica, reinos encantados, espanto lúdico
+- tenso: perigo iminente, horror, suspense ou combate
+- futurista: tecnologia avançada, naves, biônica ou neon
+- misterioso: investigação, becos chuvosos, suspense clássico, pistas
+- suave: calmaria, romance, sonhos, diálogos íntimos
+- alegre: aventuras divertidas, fofura de animais falantes, celebrações
+- conclusao: final de arco, clímax épico resolvido]
+
 GÊNEROS:
 - Fantasia: magia, criaturas místicas, reinos encantados
 - Terror: suspense, horror psicológico, sobrenatural
