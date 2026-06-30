@@ -6,12 +6,19 @@ import { motion } from 'framer-motion'
 export default function ColaborarClient() {
   const [copied, setCopied] = useState(false)
   const [showKey, setShowKey] = useState(false)
+  const [selectedTier, setSelectedTier] = useState<number | null>(null)
+  
   const pixKey = '9837c7d8-0282-42be-821f-2a87487e160d'
 
-  const handleCopy = () => {
+  const handleCopy = (amount?: string) => {
     navigator.clipboard.writeText(pixKey)
     setCopied(true)
     setTimeout(() => setCopied(false), 3000)
+  }
+
+  const handleSelectTier = (index: number) => {
+    setSelectedTier(index)
+    handleCopy(tiers[index].price)
   }
 
   const tiers = [
@@ -19,147 +26,120 @@ export default function ColaborarClient() {
       icon: '💛',
       title: 'Apoiador',
       price: '10',
-      description: 'Selo 💛 Apoiador ao lado do seu nome no ranking',
-      highlighted: false,
+      description: 'Selo 💛 Apoiador ao lado do seu nome de aventureiro no ranking',
+      color: 'from-amber-500/20 to-yellow-500/10 border-amber-500/30 text-amber-300',
+      glow: 'shadow-amber-500/10',
     },
     {
       icon: '🛟',
       title: 'Mantenedor',
       price: '25',
-      description: 'Selo 🛟 Mantenedor (cor de destaque, +chamativa)',
+      description: 'Selo 🛟 Mantenedor com cor de destaque exclusiva nas tavernas e ranking',
+      color: 'from-cyan-500/20 to-blue-500/10 border-cyan-500/40 text-cyan-300',
+      glow: 'shadow-cyan-500/20',
       highlighted: true,
     },
     {
       icon: '👑',
       title: 'Padrinho',
       price: '50',
-      description: 'Selo 👑 Padrinho (dourado), o nível de honra do projeto',
-      highlighted: false,
+      description: 'Selo 👑 Padrinho dourado lendário, a maior honra e prestígio da guilda',
+      color: 'from-yellow-400/20 to-amber-600/10 border-yellow-400/40 text-yellow-300',
+      glow: 'shadow-yellow-400/20',
     },
   ]
 
   return (
-    <div className="w-full space-y-12">
+    <div className="w-full space-y-12 max-w-3xl mx-auto">
       {/* Introduction */}
       <div className="text-center space-y-4 max-w-2xl mx-auto">
-        <h1 className="font-serif text-4xl md:text-5xl font-bold tracking-tight text-foreground">
+        <h1 className="font-serif text-4xl md:text-5xl font-bold tracking-tight text-foreground bg-clip-text text-transparent bg-gradient-to-r from-primary via-foreground to-accent">
           Apoie o projeto
         </h1>
         <p className="text-muted-foreground text-sm md:text-base leading-relaxed">
           Mantém as Crônicas do Destino no ar. <br />
-          Sem ads, sem casa de aposta. Qualquer colaboração libera novas crônicas e cobre as APIs das IAs. 
-          Os níveis abaixo mudam só o selo de reconhecimento, nunca o acesso.
+          Sem anúncios, sem intermediários. Qualquer colaboração ajuda a cobrir os custos dos servidores e APIs de inteligência artificial que narram suas aventuras.
         </p>
       </div>
 
-      {/* Tier Cards Grid */}
+      {/* Tier Cards Grid (Larger and fully interactive) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {tiers.map((tier, idx) => (
-          <motion.div
-            key={idx}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: idx * 0.1 }}
-            className={`relative flex flex-col justify-between p-6 rounded-2xl border transition-all duration-300 ${
-              tier.highlighted
-                ? 'bg-primary/5 border-primary shadow-[0_0_24px_rgba(var(--primary),0.1)]'
-                : 'bg-card/40 border-border/60 hover:border-border'
-            }`}
-          >
-            {tier.highlighted && (
-              <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-primary text-primary-foreground text-[10px] font-bold rounded-full uppercase tracking-wider">
-                ★ mais escolhido
-              </span>
-            )}
+        {tiers.map((tier, idx) => {
+          const isSelected = selectedTier === idx
+          return (
+            <motion.button
+              key={idx}
+              onClick={() => handleSelectTier(idx)}
+              whileHover={{ scale: 1.03, y: -4 }}
+              whileTap={{ scale: 0.98 }}
+              className={`relative flex flex-col text-left justify-between p-8 rounded-2xl border bg-gradient-to-b transition-all duration-300 cursor-pointer ${
+                isSelected
+                  ? `from-primary/15 to-card border-primary shadow-[0_0_30px_rgba(var(--primary),0.2)]`
+                  : tier.highlighted && selectedTier === null
+                  ? `bg-card/60 ${tier.color} ${tier.glow} shadow-lg`
+                  : 'bg-card/40 border-border/50 hover:border-border/90'
+              }`}
+            >
+              {tier.highlighted && selectedTier === null && (
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3.5 py-1 bg-gradient-to-r from-cyan-500 to-blue-500 text-white text-[9px] font-black rounded-full uppercase tracking-wider shadow-md">
+                  ★ Mais Escolhido
+                </span>
+              )}
+              {isSelected && (
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3.5 py-1 bg-primary text-primary-foreground text-[9px] font-black rounded-full uppercase tracking-wider shadow-md">
+                  ✓ Selecionado & Copiado
+                </span>
+              )}
 
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-3xl">{tier.icon}</span>
-                <span className="text-2xl font-bold font-serif text-foreground">R$ {tier.price}</span>
+              <div className="space-y-6 w-full">
+                <div className="flex items-center justify-between">
+                  <span className="text-4xl filter drop-shadow-md">{tier.icon}</span>
+                  <span className="text-3xl font-black font-serif text-foreground">R$ {tier.price}</span>
+                </div>
+
+                <div className="space-y-2">
+                  <h3 className="font-serif text-xl font-bold text-foreground flex items-center gap-1.5">
+                    {tier.title}
+                  </h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{tier.description}</p>
+                </div>
               </div>
 
-              <div>
-                <h3 className="font-serif text-xl font-bold text-foreground">{tier.title}</h3>
-                <p className="text-xs text-muted-foreground mt-2 leading-relaxed">{tier.description}</p>
+              <div className="mt-8 pt-5 border-t border-border/30 w-full">
+                <div className={`w-full py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all duration-200 ${
+                  isSelected
+                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                    : tier.highlighted && selectedTier === null
+                    ? 'bg-cyan-500 text-black hover:bg-cyan-400'
+                    : 'bg-muted text-foreground hover:bg-muted/80 border border-border/40'
+                }`}>
+                  {isSelected ? '💸 Chave Copiada!' : `💸 Colaborar R$ ${tier.price} via PIX`}
+                </div>
               </div>
-            </div>
-
-            <div className="mt-6 pt-4 border-t border-border/30">
-              <button
-                onClick={handleCopy}
-                className={`w-full py-2.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all duration-200 ${
-                  tier.highlighted
-                    ? 'bg-primary text-primary-foreground hover:bg-primary/95'
-                    : 'bg-muted/80 text-foreground hover:bg-muted border border-border/40'
-                }`}
-              >
-                💸 Colaborar R$ {tier.price} via PIX →
-              </button>
-            </div>
-          </motion.div>
-        ))}
+            </motion.button>
+          )
+        })}
       </div>
 
       {/* Access Disclaimer */}
-      <div className="p-4 bg-muted/30 border border-border/40 rounded-xl text-center max-w-2xl mx-auto">
+      <div className="p-4 bg-muted/20 border border-border/30 rounded-xl text-center max-w-2xl mx-auto">
         <p className="text-xs text-muted-foreground">
-          🎯 Todos os níveis liberam o mesmo acesso (crônicas extras + sugestões) — a diferença é só o selo. Quer colaborar outro valor? Escolhe livremente no formulário abaixo.
+          🎯 Todos os níveis liberam as mesmas recompensas (crônicas extras + sugestões prioritárias) — a diferença é o selo de honra. Se quiser doar outro valor, use a chave abaixo.
         </p>
       </div>
 
       {/* PIX Donation Details */}
-      <div className="border border-border/60 bg-card/25 rounded-2xl p-6 md:p-8 max-w-xl mx-auto space-y-6">
-        <div className="text-center space-y-1">
+      <div className="border border-border bg-card/20 rounded-2xl p-8 max-w-xl mx-auto space-y-6">
+        <div className="text-center space-y-2">
           <h2 className="font-serif text-2xl font-bold text-foreground">💸 Colaborar via PIX</h2>
-          <p className="text-xs text-muted-foreground">Sem taxa, instantâneo, brasileiro. Escolhe o valor no app do banco.</p>
-        </div>
-
-        {/* QR Code */}
-        <div className="flex flex-col items-center gap-3 py-4 border-y border-border/30">
-          <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">QR Code PIX</div>
-          <div className="p-3 bg-white rounded-xl shadow-md">
-            {/* Custom SVG QR Code Placeholder */}
-            <svg viewBox="0 0 100 100" className="w-36 h-36 text-black">
-              <rect x="0" y="0" width="25" height="25" fill="black" />
-              <rect x="5" y="5" width="15" height="15" fill="white" />
-              <rect x="8" y="8" width="9" height="9" fill="black" />
-
-              <rect x="75" y="0" width="25" height="25" fill="black" />
-              <rect x="80" y="5" width="15" height="15" fill="white" />
-              <rect x="83" y="8" width="9" height="9" fill="black" />
-
-              <rect x="0" y="75" width="25" height="25" fill="black" />
-              <rect x="5" y="80" width="15" height="15" fill="white" />
-              <rect x="8" y="83" width="9" height="9" fill="black" />
-
-              <rect x="35" y="10" width="10" height="15" fill="black" />
-              <rect x="55" y="5" width="15" height="10" fill="black" />
-              <rect x="40" y="30" width="20" height="5" fill="black" />
-              <rect x="10" y="35" width="15" height="15" fill="black" />
-              <rect x="15" y="40" width="5" height="5" fill="white" />
-              <rect x="30" y="50" width="10" height="10" fill="black" />
-              <rect x="50" y="45" width="15" height="15" fill="black" />
-              <rect x="75" y="35" width="15" height="20" fill="black" />
-              <rect x="80" y="40" width="5" height="10" fill="white" />
-              <rect x="35" y="70" width="20" height="10" fill="black" />
-              <rect x="65" y="75" width="10" height="15" fill="black" />
-              <rect x="85" y="65" width="10" height="10" fill="black" />
-              <rect x="80" y="80" width="15" height="15" fill="black" />
-              <rect x="85" y="85" width="5" height="5" fill="white" />
-            </svg>
-          </div>
-          <span className="text-[10px] text-muted-foreground text-center max-w-xs">
-            📱 Abra o app do seu banco, escolha PIX → Pagar com QR Code e aponte a câmera. Você escolhe o valor.
-          </span>
+          <p className="text-xs text-muted-foreground">Copie a chave abaixo e insira o valor desejado no aplicativo do seu banco.</p>
         </div>
 
         {/* Copy Paste Code */}
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
-              📋 Copiar código PIX (copia e cola) OU Chave PIX (email)
-            </span>
-          </div>
+          <label className="text-xs font-semibold text-muted-foreground">
+            Chave PIX (E-mail / Aleatória)
+          </label>
 
           <div className="flex gap-2">
             <div className="flex-1 relative flex items-center">
@@ -167,12 +147,12 @@ export default function ColaborarClient() {
                 type={showKey ? 'text' : 'password'}
                 readOnly
                 value={pixKey}
-                className="w-full px-3 py-2 bg-muted/60 border border-border/80 rounded-xl text-xs font-mono text-foreground focus:outline-none"
+                className="w-full px-4 py-2.5 bg-muted/50 border border-border rounded-xl text-xs font-mono text-foreground focus:outline-none tracking-wide"
               />
               <button
                 type="button"
                 onClick={() => setShowKey(!showKey)}
-                className="absolute right-3 text-muted-foreground hover:text-foreground transition-colors"
+                className="absolute right-3.5 text-muted-foreground hover:text-foreground transition-colors"
                 title={showKey ? 'Ocultar chave' : 'Mostrar chave'}
               >
                 {showKey ? (
@@ -190,8 +170,8 @@ export default function ColaborarClient() {
             </div>
 
             <button
-              onClick={handleCopy}
-              className={`px-4 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all duration-200 ${
+              onClick={() => handleCopy()}
+              className={`px-5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all duration-200 ${
                 copied
                   ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                   : 'bg-primary text-primary-foreground hover:bg-primary/95'
@@ -203,9 +183,9 @@ export default function ColaborarClient() {
         </div>
 
         {/* Confirmation Info */}
-        <div className="pt-4 border-t border-border/30 text-center">
-          <p className="text-xs text-muted-foreground">
-            Depois, manda o comprovante no Instagram <a href="https://instagram.com/arena.das.ias" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-semibold">@arena.das.ias</a> para liberar suas recompensas 💛
+        <div className="pt-5 border-t border-border/30 text-center">
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Depois, mande o comprovante para o e-mail <span className="text-primary font-bold">contato@cronicasdodestino.com.br</span> ou abra uma mensagem de suporte para liberar suas recompensas na taverna 💛
           </p>
         </div>
       </div>
