@@ -28,9 +28,9 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Nenhum texto para narrar' }, { status: 400 })
     }
 
-    // Fazer requisição de stream para ElevenLabs
+    // Fazer requisição de stream para ElevenLabs com máxima otimização de latência
     const response = await fetch(
-      `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream`,
+      `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream?optimize_streaming_latency=4`,
       {
         method: 'POST',
         headers: {
@@ -60,12 +60,12 @@ export async function GET(req: Request) {
       )
     }
 
-    // Repassar o body stream do ElevenLabs diretamente para o cliente
-    // Isso habilita a reprodução em tempo real enquanto o áudio é gerado!
+    // Repassar o body stream do ElevenLabs diretamente para o cliente sem buffering
     return new Response(response.body, {
       headers: {
         'Content-Type': 'audio/mpeg',
         'Transfer-Encoding': 'chunked',
+        'X-Accel-Buffering': 'no',
       },
     })
   } catch (error: any) {
@@ -99,7 +99,7 @@ export async function POST(req: Request) {
     }
 
     const response = await fetch(
-      `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream`,
+      `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream?optimize_streaming_latency=4`,
       {
         method: 'POST',
         headers: {
@@ -129,6 +129,7 @@ export async function POST(req: Request) {
       headers: {
         'Content-Type': 'audio/mpeg',
         'Content-Length': audioBuffer.byteLength.toString(),
+        'X-Accel-Buffering': 'no',
       },
     })
   } catch (error) {
