@@ -22,11 +22,13 @@ export function Header({ user, onHomeClick }: HeaderProps) {
   const [loggingOut, setLoggingOut] = useState(false)
   const [muted, setMuted] = useState(true)
   const [narrationEnabled, setNarrationEnabled] = useState(false)
+  const [selectedVoice, setSelectedVoiceState] = useState('pNInz6obpgDQGcFmaJgB')
 
   useEffect(() => {
     // Sincronizar estado inicial
     setMuted(gameAudio.getIsMuted())
     setNarrationEnabled(ttsEngine.getIsEnabled())
+    setSelectedVoiceState(ttsEngine.getSelectedVoice())
   }, [])
 
   const toggleMute = () => {
@@ -47,6 +49,19 @@ export function Header({ user, onHomeClick }: HeaderProps) {
       ttsEngine.speak("Narrador ativado.")
     } else {
       ttsEngine.stop()
+    }
+  }
+
+  const handleVoiceChange = (voiceId: string) => {
+    setSelectedVoiceState(voiceId)
+    ttsEngine.setSelectedVoice(voiceId)
+    gameAudio.playSFX('click')
+    
+    // Pequeno feedback de fala na voz recém-selecionada (se a narração estiver ligada)
+    if (narrationEnabled) {
+      setTimeout(() => {
+        ttsEngine.speak("Voz do narrador alterada com sucesso.")
+      }, 100)
     }
   }
 
@@ -127,29 +142,46 @@ export function Header({ user, onHomeClick }: HeaderProps) {
       {/* Navigation Actions */}
       <div className="flex items-center gap-3">
         {/* Narration Toggle Button */}
-        <button
-          onClick={toggleNarration}
-          className="flex h-7.5 w-7.5 items-center justify-center rounded-lg border border-border/80 hover:bg-muted/30 transition-all text-muted-foreground hover:text-foreground cursor-pointer"
-          title={narrationEnabled ? 'Desativar narrador por voz' : 'Ativar narrador por voz'}
-        >
-          {narrationEnabled ? (
-            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-emerald-500 animate-pulse">
-              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-              <path d="M19 10v1a7 7 0 0 1-14 0v-1"/>
-              <line x1="12" y1="19" x2="12" y2="23"/>
-              <line x1="8" y1="23" x2="16" y2="23"/>
-            </svg>
-          ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <line x1="1" y1="1" x2="23" y2="23"/>
-              <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/>
-              <path d="M19 10v1a6.93 6.93 0 0 1-.46 2.5"/>
-              <path d="M5 10v1a6.93 6.93 0 0 0 .5 2.5"/>
-              <line x1="12" y1="19" x2="12" y2="23"/>
-              <line x1="8" y1="23" x2="16" y2="23"/>
-            </svg>
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={toggleNarration}
+            className="flex h-7.5 w-7.5 items-center justify-center rounded-lg border border-border/80 hover:bg-muted/30 transition-all text-muted-foreground hover:text-foreground cursor-pointer"
+            title={narrationEnabled ? 'Desativar narrador por voz' : 'Ativar narrador por voz'}
+          >
+            {narrationEnabled ? (
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-emerald-500 animate-pulse">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                <path d="M19 10v1a7 7 0 0 1-14 0v-1"/>
+                <line x1="12" y1="19" x2="12" y2="23"/>
+                <line x1="8" y1="23" x2="16" y2="23"/>
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <line x1="1" y1="1" x2="23" y2="23"/>
+                <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/>
+                <path d="M19 10v1a6.93 6.93 0 0 1-.46 2.5"/>
+                <path d="M5 10v1a6.93 6.93 0 0 0 .5 2.5"/>
+                <line x1="12" y1="19" x2="12" y2="23"/>
+                <line x1="8" y1="23" x2="16" y2="23"/>
+              </svg>
+            )}
+          </button>
+
+          {narrationEnabled && (
+            <select
+              value={selectedVoice}
+              onChange={(e) => handleVoiceChange(e.target.value)}
+              className="text-[10px] px-2 py-1 rounded-lg border border-border/80 bg-background/90 text-muted-foreground hover:text-foreground cursor-pointer focus:outline-none max-w-[110px] truncate"
+              title="Escolher Voz do Narrador"
+            >
+              <option value="pNInz6obpgDQGcFmaJgB">Adam (Masculino)</option>
+              <option value="21m00Tcm4TlvDq8ikWAM">Rachel (Feminino)</option>
+              <option value="JBFqnCBsd6RMkjVDRZzb">George (Clássico)</option>
+              <option value="EXAVITQu4vr4xnSDxMaL">Bella (Drama)</option>
+              <option value="browser-fallback">Navegador (Nativo)</option>
+            </select>
           )}
-        </button>
+        </div>
 
         {/* Sound Toggle Button */}
         <button
