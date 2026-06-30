@@ -7,10 +7,21 @@ import { Genre, getInitialPrompt, SavedGameData, parseChoices } from '@/lib/game
 import { GenreSelector } from '@/components/genre-selector'
 import { PlayerSetup } from '@/components/player-setup'
 import { GameInterface } from '@/components/game-interface'
+import { Header } from '@/components/header'
 
 type GamePhase = 'genre-select' | 'player-setup' | 'playing'
 
-export default function NarrativeGame() {
+interface UserSession {
+  userId: string
+  email: string
+  name: string
+}
+
+interface NarrativeGameProps {
+  user: UserSession | null
+}
+
+export default function NarrativeGame({ user }: NarrativeGameProps) {
   const [phase, setPhase] = useState<GamePhase>('genre-select')
   const [selectedGenre, setSelectedGenre] = useState<Genre | null>(null)
   const [playerName, setPlayerName] = useState('')
@@ -155,37 +166,63 @@ export default function NarrativeGame() {
     localStorage.removeItem('savedGames')
   }, [])
 
+  const handleHomeClick = useCallback(() => {
+    if (phase === 'playing') {
+      if (confirm('Deseja voltar ao menu principal? Seu progresso atual está salvo.')) {
+        handleRestart()
+      }
+    } else {
+      handleRestart()
+    }
+  }, [phase, handleRestart])
+
   return (
-    <>
-      {phase === 'genre-select' && (
-        <GenreSelector 
-          onSelect={handleGenreSelect} 
-          onContinue={handleContinue}
-          savedGames={savedGames}
-          onDelete={handleDeleteGame}
-          onDeleteAll={handleDeleteAllGames}
-        />
-      )}
-      
-      {phase === 'player-setup' && selectedGenre && (
-        <PlayerSetup 
-          genre={selectedGenre} 
-          onStart={handleStartGame}
-          onBack={handleBack}
-        />
-      )}
-      
-      {phase === 'playing' && selectedGenre && (
-        <GameInterface
-          genre={selectedGenre}
-          playerName={playerName}
-          messages={messages}
-          isStreaming={isStreaming}
-          onChoice={handleChoice}
-          onRestart={handleRestart}
-          protagonistDescription={protagonistDescription}
-        />
-      )}
-    </>
+    <div className="min-h-screen flex flex-col bg-background text-foreground relative">
+      {/* Dynamic Background elements */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+        <div className="absolute top-[-10%] left-[-15%] w-[600px] h-[600px] rounded-full bg-primary/5 filter blur-[130px] animate-pulse duration-10000" />
+        <div className="absolute bottom-[-10%] right-[-15%] w-[600px] h-[600px] rounded-full bg-accent/5 filter blur-[130px] animate-pulse duration-10000 delay-3000" />
+      </div>
+
+      {/* Top Navbar */}
+      <Header 
+        user={user} 
+        onHomeClick={handleHomeClick}
+      />
+
+      {/* Main Content Area */}
+      <main className="flex-1 flex flex-col relative z-10 w-full">
+        {phase === 'genre-select' && (
+          <GenreSelector 
+            onSelect={handleGenreSelect} 
+            onContinue={handleContinue}
+            savedGames={savedGames}
+            onDelete={handleDeleteGame}
+            onDeleteAll={handleDeleteAllGames}
+          />
+        )}
+        
+        {phase === 'player-setup' && selectedGenre && (
+          <PlayerSetup 
+            genre={selectedGenre} 
+            onStart={handleStartGame}
+            onBack={handleBack}
+          />
+        )}
+        
+        {phase === 'playing' && selectedGenre && (
+          <GameInterface
+            genre={selectedGenre}
+            playerName={playerName}
+            messages={messages}
+            isStreaming={isStreaming}
+            onChoice={handleChoice}
+            onRestart={handleRestart}
+            protagonistDescription={protagonistDescription}
+          />
+        )}
+      </main>
+    </div>
   )
 }
+
