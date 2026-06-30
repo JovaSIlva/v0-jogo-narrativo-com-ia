@@ -130,24 +130,17 @@ export function SceneImage({ imagePrompt, genre, messageId, protagonistDescripti
       <AnimatePresence>
         {imageUrl && !isLoading && !hasError && (
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 10 }}
-            transition={{ delay: 0.3 }}
-            className="absolute bottom-0 inset-x-0 p-4 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex items-end justify-between opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute top-4 right-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10"
           >
-            <div className="flex items-center gap-2 text-white/90 max-w-[85%]">
-              <Sparkles className="w-4 h-4 text-primary shrink-0 animate-pulse" />
-              <p className="text-xs font-medium truncate italic" title={imagePrompt}>
-                &ldquo;{imagePrompt}&rdquo;
-              </p>
-            </div>
             <button
               onClick={handleRetry}
-              className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white/90 transition-colors shrink-0"
+              className="p-2 rounded-full bg-black/60 hover:bg-black/80 text-white/90 transition-colors shrink-0 shadow-lg border border-white/10"
               title="Gerar outra imagem"
             >
-              <RefreshCw className="w-3.5 h-3.5" />
+              <RefreshCw className="w-4 h-4" />
             </button>
           </motion.div>
         )}
